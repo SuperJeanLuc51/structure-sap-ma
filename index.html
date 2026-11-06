@@ -40,7 +40,7 @@ button{font:inherit;background:none;border:1px solid var(--bd);color:var(--mu);b
 </style></head><body><main>
 <div class="top"><h1>Structure SAP-MA<small id="maj">Consultation</small></h1><div><button id="rst" hidden>Réinitialiser</button> <button id="chg" hidden>Base…</button></div></div>
 <input id="file" type="file" hidden>
-<div id="imp" class="card" hidden><h2 style="font-size:16px;margin:12px 0 6px">Charger la base de données</h2><p style="color:var(--mu);margin:0 0 12px">Aucune base n’est enregistrée sur cet appareil. Sélectionnez votre fichier de base <b>chiffré</b> (<b>.enc</b>). Il reste chiffré sur ce téléphone : le mot de passe sera demandé à chaque ouverture.</p><button id="pick" style="background:var(--ac);color:#fff;border:0;width:100%;padding:14px;font-weight:700">Choisir le fichier</button><p id="err" style="color:#c0392b;margin:10px 0 0"></p></div>
+<div id="imp" class="card" hidden><h2 style="font-size:16px;margin:12px 0 6px">Charger la base de données</h2><p style="color:var(--mu);margin:0 0 12px">Aucune base n’est enregistrée sur cet appareil. Sélectionnez le fichier de base (<b>base_sap_ma.json</b>) : il restera sur ce téléphone et fonctionnera ensuite sans réseau.</p><button id="pick" style="background:var(--ac);color:#fff;border:0;width:100%;padding:14px;font-weight:700">Choisir le fichier</button><p id="err" style="color:#c0392b;margin:10px 0 0"></p></div>
 <div id="lock" class="card" hidden><h2 style="font-size:16px;margin:12px 0 6px">🔒 Base verrouillée</h2><p style="color:var(--mu);margin:0 0 12px">Entrez le mot de passe fourni avec votre fichier de base.</p><input id="pw" type="password" autocomplete="off" placeholder="Mot de passe"><button id="go" style="background:var(--ac);color:#fff;border:0;width:100%;padding:14px;font-weight:700">Déverrouiller</button><p id="lerr" style="color:#c0392b;margin:10px 0 0"></p></div>
 <div id="app" hidden>
 <input id="q" type="search" placeholder="Rechercher : équipement, OT, poste technique…" autocomplete="off">
@@ -219,9 +219,10 @@ $('file').onchange=function(){
   r.onload=async()=>{
     try{
       const e=JSON.parse(r.result);
+      if(Array.isArray(e.P)&&Array.isArray(e.E)){await dbSet(e);ENV=null;await start(e);return}
       if(e.v!==1||!e.ct||!e.salt||!e.iv||!(e.it>=100000&&e.it<=2000000))throw 0;
       await dbSet(e);ENV=e;$('lerr').textContent='';$('pw').value='';view('lock');
-    }catch(x){view(ENV?'lock':'imp');$('err').textContent='Fichier non reconnu : choisissez un fichier .enc chiffré.'}
+    }catch(x){view(ENV?'lock':'imp');$('err').textContent='Fichier non reconnu. Choisissez le fichier base_sap_ma.json.'}
   };
   r.readAsText(f,'utf-8');
 };
@@ -234,6 +235,6 @@ $('go').onclick=async()=>{
   if(d){$('pw').value='';await start(d)}
 };
 $('pw').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
-dbGet().then(e=>{if(e&&e.ct){ENV=e;view('lock')}else view('imp')});
+dbGet().then(e=>{if(e&&e.ct){ENV=e;view('lock')}else if(e&&Array.isArray(e.P)&&Array.isArray(e.E)){start(e)}else view('imp')});
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{try{navigator.serviceWorker.register('sw.js')}catch(e){}})}
 </script></body></html>
